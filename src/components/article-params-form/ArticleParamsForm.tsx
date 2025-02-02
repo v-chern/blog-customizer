@@ -1,31 +1,44 @@
-import { ArrowButton } from 'src/ui/arrow-button';
-import { Button } from 'src/ui/button';
-
 import styles from './ArticleParamsForm.module.scss';
 import React from 'react';
+import clsx from 'clsx';
 import { SyntheticEvent } from 'react';
+
+import { ArrowButton } from 'src/ui/arrow-button';
+import { Button } from 'src/ui/button';
 import { Select } from 'src/ui/select';
-
-
-import { ArticleStateType, backgroundColors, contentWidthArr, defaultArticleState, fontColors, fontFamilyOptions, fontSizeOptions, OptionType } from 'src/constants/articleProps';
 import { Separator } from 'src/ui/separator';
 import { RadioGroup } from 'src/ui/radio-group';
-import { createPortal } from 'react-dom';
+
+import { useOutsideClickClose } from './hooks/useOutsideClickClose';
+
+import { 
+	ArticleStateType, 
+	backgroundColors,
+	contentWidthArr,
+	defaultArticleState,
+	fontColors,
+	fontFamilyOptions, 
+	fontSizeOptions,
+	OptionType
+} from 'src/constants/articleProps';
 
 type TArticleParamsFormProps = {
-	currentStyle: ArticleStateType;
 	onSubmit: (newStyle: ArticleStateType) => void;
 }
 
-export const ArticleParamsForm = ({currentStyle, onSubmit}: TArticleParamsFormProps) => {
-	const [formState, setFormState] = React.useState(false);
-	const [formValues, setFormValues] = React.useState<ArticleStateType>(currentStyle);
+export const ArticleParamsForm = ({onSubmit}: TArticleParamsFormProps) => {
+	const [isOpen, setIsOpen] = React.useState(false);
+	const [formValues, setFormValues] = React.useState<ArticleStateType>({...defaultArticleState});
 
 	const containterRef = React.useRef<HTMLElement | null> (null);
 
+	const containerStyle = clsx({
+		[styles.container]: true,
+		[styles.container_open]: isOpen
+	});
+
 	const toggleForm = () => {
-		setFormState(!formState);
-		containterRef.current?.classList.toggle(styles.container_open)
+		setIsOpen(!isOpen);
 	}
 
 	const handleFormReset = () => {
@@ -40,28 +53,21 @@ export const ArticleParamsForm = ({currentStyle, onSubmit}: TArticleParamsFormPr
 		toggleForm();
 	};
 
-	const handleExternalClick = (event: MouseEvent) => {
-		if (formState && containterRef.current && !containterRef.current.contains(event.target as Node) ) {
-			toggleForm();
-		}
-	}
+	useOutsideClickClose({
+		isOpen,
+		rootRef: containterRef,
+		onClose: toggleForm
+	});
 
-	React.useEffect(() => {
-		document.addEventListener('mousedown', handleExternalClick);
-		return () => {
-			document.removeEventListener('mousedown', handleExternalClick);
-		};
-	}, [formState]);
-	
 	return (
 		<>
 			<ArrowButton 
-				isOpen={formState} 
+				isOpen={isOpen} 
 				onClick={toggleForm} />
 			<aside 
-				className={styles.container} 
+				className={containerStyle} 
 				ref={containterRef}>
-				<form className={styles.form}>
+				<form className={styles.form} onSubmit={handleFormSubmit}>
 					<div className={styles.inputsContainer}>
 						<h2 className={styles.title}>Задайте параметры</h2>
 						<Select 
@@ -114,7 +120,7 @@ export const ArticleParamsForm = ({currentStyle, onSubmit}: TArticleParamsFormPr
 					</div>
 					<div className={styles.bottomContainer}>
 						<Button title='Сбросить' htmlType='reset' type='clear' onClick={handleFormReset}/>
-						<Button title='Применить' htmlType='submit' type='apply' onClick={handleFormSubmit}/>
+						<Button title='Применить' htmlType='submit' type='apply'/>
 					</div>
 				</form>
 			</aside>
